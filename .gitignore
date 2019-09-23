@@ -1,0 +1,7 @@
+pgdata
+logs
+.env
+.docker-sync
+api
+client
+.vscode

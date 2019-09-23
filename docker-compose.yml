@@ -1,0 +1,68 @@
+version: '2'
+
+services:
+    nginx:
+        container_name: nginx
+        build: docker/nginx
+        restart: always
+        ports:
+            - 80:80
+            - 443:443
+        volumes_from:
+            - php
+            - client
+        volumes:
+            - ./logs/nginx/:/var/log/nginx
+            # - ./nginx/certificate:/etc/nginx/ssl
+        depends_on:
+            - php
+        links:
+            - php
+            - client
+        networks:
+            - default
+    php:
+        container_name: php
+        build:
+            context: docker/php
+            args:
+                TIMEZONE: Europe/Paris
+        volumes:
+            - app-sync:/var/www/symfony
+            - ./logs/symfony:/var/www/symfony/var/logs
+        links:
+            - db
+        ports:
+            - 9000:9000
+        environment:
+            DATABASE_URL: ${DB_DRIVER}://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+    db:
+        container_name: postgres
+        container_name: db
+        image: postgres:11.5
+        volumes:
+            - ./pgdata:/var/lib/postgresql/data
+        environment:
+            TZ: Europe/Paris
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_DB: ${DB_NAME}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        ports:
+            - 5432:5432
+    client:
+        container_name: client
+        image: node:latest
+        working_dir: /app
+        tty: true
+        volumes:
+            - ./client:/app
+        ports:
+            - 8080:8080
+            - 8081:8081
+        environment:
+        #     VUE_APP_API_URL: "${SCHEME}://${SERVER_HOST}"
+        #     SERVER_URL: ${SERVER_HOST}
+            NODE_ENV: ${NODE_ENV}
+volumes:  
+    app-sync:
+        external: true
